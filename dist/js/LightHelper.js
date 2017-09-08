@@ -84,6 +84,10 @@ function LightHelper(params){
 
   this.counter = 0;
   
+  this.switchLightPreset();
+  this.switchLightPreset();
+  this.switchLightPreset();
+  
 }
 
 LightHelper.prototype.changeLightDirection = function(direction){ // no gui
@@ -124,10 +128,13 @@ LightHelper.prototype.switchLightPreset = function(){
 
   this.preset ++;
 
-  this.preset = this.preset % this.presets.length;
+  this.preset = this.preset % this.presets.length || 0;
 
+  if (this.guiCtrl){
   this.guiCtrl.light_rotate_x = this.presets[this.preset][0];
   this.guiCtrl.light_rotate_y = this.presets[this.preset][1];
+    
+  }
 
 }
 
