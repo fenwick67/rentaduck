@@ -25,7 +25,7 @@ var lightDirPresets = [
 
 var logDir = false; // log light direction vector
 
-var showStats = true;
+var showStats = false;
 
 var showRaycastHelper = false;
 
@@ -248,7 +248,7 @@ var App = function(){
 
   // stats
 
-  if (showStats){
+  if (showStats && typeof Stats !== "undefined"){
 
     this.stats = new Stats();
 
