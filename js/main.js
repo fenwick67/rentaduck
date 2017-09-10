@@ -125,7 +125,7 @@ var App = function(){
       mat.specular = new THREE.Color(0x202020);
       
       self.duck = new THREE.Mesh( geometry, mat );
-      self.duck.scale.set(10,10,10);
+      self.duck.scale.set(15,15,15);
           
       self.duck.phase = Math.random()*100;
       self.duck.rot = 1/3.3215678;
