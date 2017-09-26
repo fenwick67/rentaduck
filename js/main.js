@@ -63,7 +63,7 @@ var App = function(){
 
   // renderer
 
-  this.renderer = new THREE.WebGLRenderer();
+  this.renderer = new THREE.WebGLRenderer({antialias:true});
 
   this.renderer.setClearColor( 0x000000, 1);
   this.renderer.antialias = true;
