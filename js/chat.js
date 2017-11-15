@@ -216,7 +216,7 @@ s.innerHTML = css;
 // js
 
 document.addEventListener('DOMContentLoaded',function(){
- 
+
 document.head.appendChild(s);
 document.body.innerHTML = document.body.innerHTML + chatHtml;
 
@@ -251,7 +251,7 @@ function type(){
 }
 
 function quack(){
-  
+
   function mog(){
     var m = ['🍞','🥖','🌊','💧','🦆'];
     return m[Math.floor(Math.random()*m.length)];
@@ -266,12 +266,12 @@ function quack(){
   }else{
     s = s + mog();
   }
-  
+
   var len = Math.random()*8;
   for (var i = 1; i < len; i ++){
     var n = Math.random();
     if (n < 0.7){
-      s+=' quack';      
+      s+=' quack';
     }else if (n < 0.95){
       s +='-quack'
     }else{
@@ -283,7 +283,7 @@ function quack(){
   if (Math.random() > 0.9){
     s = s.toUpperCase();
   }
-  
+
   // dom update
   ellipsis.classList.add('hidden');
   chatList.innerHTML = chatList.innerHTML + '<li><div class="duckicon"></div>'+s+'</li>';
@@ -300,10 +300,10 @@ document.querySelector('#chat-toggle').addEventListener('click',function(e){
   document.querySelector('.chatapp').classList.toggle('collapsed')
   if (!toggleSpent){
     toggleSpent = true;
-  
+
   setTimeout(type,500);
   setTimeout(quack,2000);
   }
 });
- 
+
 });

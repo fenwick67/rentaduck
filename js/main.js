@@ -1,9 +1,9 @@
-/* 
+/*
  * sydneyzh 2016
  */
 
 var UP = new THREE.Vector3(0,1,0);
-
+var ZERO = new THREE.Vector3(0,0,0);
 var waterInfoWidth = waterWidth = 125;
 var waterInfoHeight = waterInfoWidth;
 
@@ -19,7 +19,7 @@ var useGui = true;
 var showLightHelper = false;
 
 var lightDirPresets = [
-  [1.81, -0.41],  
+  [1.81, -0.41],
   [0.85, 0.15],
   [1.34, -0.14]
 ];
@@ -32,12 +32,12 @@ var showRaycastHelper = false;
 
 
 window.onload = function(){
-  
+
   if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
   app = new App();
   app.startAnim();
-  
+
   window.addEventListener( 'resize', onWindowResize, false );
   onWindowResize();
 
@@ -47,6 +47,7 @@ function onWindowResize() {
   app.camera.aspect = window.innerWidth / window.innerHeight;
   app.camera.updateProjectionMatrix();
   app.renderer.setSize( window.innerWidth, window.innerHeight );
+  app.composer.setSize( window.innerWidth, window.innerHeight );
 }
 
 var App = function(){
@@ -68,7 +69,7 @@ var App = function(){
   this.renderer.setClearColor( 0x000000, 1);
   this.renderer.antialias = true;
   this.renderer.autoClear = false;
-
+  this.renderer.shadowMap.enabled = true;
   this.container.appendChild(this.renderer.domElement);
 
 
@@ -81,7 +82,7 @@ var App = function(){
     presets: lightDirPresets
 
   });
-  
+
 
   if (this.lightHelper.obj){
 
@@ -89,30 +90,30 @@ var App = function(){
 
   }
 
-  
-  
-  // envmap     
+
+
+  // envmap
   var env_urls = [
    'img/skybox/posx.jpg',
    'img/skybox/negx.jpg',
    'img/skybox/posy.jpg',
    'img/skybox/negy.jpg',
    'img/skybox/posz.jpg',
-   'img/skybox/negz.jpg' 
+   'img/skybox/negz.jpg'
   ];
-  
-  var enviro = new THREE.CubeTextureLoader().load(env_urls);    
+
+  var enviro = new THREE.CubeTextureLoader().load(env_urls);
 
   // real scene
 
   this.scene = new THREE.Scene();
   this.scene.matrixAutoUpdate = false;
-  
+
   // ducke
-  
+
   this.duck = null;
   this.duckitu = null;
-  
+
   var loader = new THREE.JSONLoader();// load a resource
   loader.load(
     // resource URL
@@ -123,17 +124,19 @@ var App = function(){
       mat.map = material[0].map;
       mat.shininess = 10;
       mat.specular = new THREE.Color(0x202020);
-      
+
       self.duck = new THREE.Mesh( geometry, mat );
+      self.duck.castShadow = true;
+//      self.duck.receiveShadow = true;
       self.duck.scale.set(15,15,15);
-          
+
       self.duck.phase = Math.random()*100;
       self.duck.rot = 1/3.3215678;
       self.duck.rot2 = 1/2.31567;
       self.duck.rot3 = 1/3.35123;
       self.duck.euler = new THREE.Euler(0,0,0);
       self.duck.spd = 0.5;
-      
+
       var loader = new THREE.TextureLoader();
       loader.load(
         'res/DUCKIMG.png',
@@ -141,18 +144,20 @@ var App = function(){
           mat.map = texture;
           self.scene.add(self.duck);
           self.duckitu = self.duck.clone();
+          self.duckitu.castShadow = self.duckitu.receiveShadow = false;
+
           self.duckitu.scale.set(10,10,10);
           self.scene.add(self.duckitu);
         }
-        
+
       );
 
     }
   );
-  
+
   // the sinke
   var loader2 = new THREE.JSONLoader();
-  loader2.load('res/sink.json',function(geo,materials){     
+  loader2.load('res/sink.json',function(geo,materials){
     var l = new THREE.TextureLoader();
       l.load(
         'img/tile.jpg',
@@ -173,24 +178,26 @@ var App = function(){
             var mesh = new THREE.Mesh(geo,mat);
             mesh.scale.set(waterInfoWidth,waterInfoWidth,waterInfoWidth);
             mesh.position.y = -23.4
+      	    mesh.castShadow = true;
+      	    mesh.receiveShadow = true;
             self.scene.add(mesh);
             self.mappedSink = mesh;
-          
+
           });
         }
-        
+
       );
 
   });
-  
-  
-  
+
+
+
   // sink
-  
+
 
   // tileTexture
-  
-  /*  
+
+  /*
   var sinkMat = new THREE.MeshStandardMaterial({roughness:0.2,metalness:0,envMap:enviro});
   this.sinkMat = sinkMat;
   this.sink = new SinkGeometry(waterInfoWidth,20,45, sinkMat );
@@ -201,24 +208,24 @@ var App = function(){
   this.sink.add(floor)
   this.scene.add(this.sink);
   */
-  
+
   // counter
-  
+
   /*
   this.counter = new SinkGeometry(waterInfoWidth+20*2, 100, 40, new THREE.MeshStandardMaterial({roughness:0.8,metalness:0,color:0xc4ae79,envMap:enviro}) );
   this.scene.add(this.counter);
   */
-  
+
   // fog
-  
+
   // this.scene.fog = new THREE.FogExp2(0xfef8d3,0.001);
-  
+
   // skybox
-  
+
   var materialArray = env_urls.map(function(u){
     return new THREE.MeshBasicMaterial( { map: new THREE.TextureLoader().load( u ), fog:false })
   });
-  
+
   for (var i = 0; i < 6; i++)
      materialArray[i].side = THREE.BackSide;
   var skyboxMaterial = new THREE.MeshFaceMaterial( materialArray );
@@ -226,39 +233,49 @@ var App = function(){
   var skybox = new THREE.Mesh( skyboxGeom, skyboxMaterial );
   this.scene.add( skybox );
   this.skybox = skybox;
-  
-  
+
+
   //cloud
-  
+
   var loader3 = new THREE.JSONLoader();
   loader3.load('res/cloud.json',function(geo){
     self.cloud = new THREE.Mesh(geo,new THREE.MeshStandardMaterial({
       envMap:enviro,
       metalness:0.0,
       roughness:1,
-      emissive:self.directionalLight.color,
+      emissive:self.spotLight.color,
       emissiveIntensity:0.5,
       side:THREE.DoubleSide
     }));
     self.cloud.scale.set(50,50,50);
+    self.cloud.receiveShadow = true;
+    self.cloud.castShadow = false;
     self.cloud.position.set(0,-160,0);
     self.scene.add(self.cloud);
   });
-  
-  
+
+
   //lights
   this.hemisphereLight = new THREE.HemisphereLight(0xeac49f,0xbd97c0,0.6);
   this.scene.add(this.hemisphereLight);
-  this.directionalLight = new THREE.DirectionalLight(0xfbf3c1,0.5);
-  this.directionalLight.position.set(1,1,1);
-  this.scene.add(this.directionalLight);
-  
+  this.spotLight = new THREE.SpotLight(0xfbf3c1,0.5);
+  this.spotLight.castShadow = true;
+  this.spotLight.position.set(0,50,0);
+  this.spotLight.lookAt(ZERO);
+  this.spotLight.shadow.camera.far = 2000;
+  this.spotLight.shadow.mapSize.width = 1024;
+  this.spotLight.shadow.mapSize.height = 1024;
+  this.scene.add(this.spotLight);
+
+  //this.spotLight.shadow.camera.fov = 5;
+  this.spotLight.shadow.camera.updateProjectionMatrix();
+
   this.pointLight = new THREE.PointLight(0xc6f9ff);
   this.pointLight.position.set(0,100,0);
   this.scene.add(this.pointLight);
-  
-  //this.directionalLight.intensity = 0.4;
-  this.pointLight.intensity = 0.2;
+
+  this.spotLight.intensity = 0.2;
+  this.pointLight.intensity = 0.1;
 
   // camera
 
@@ -332,18 +349,30 @@ var App = function(){
   this.raycastHelper.visible = showRaycastHelper;
 
   // "simple" water
-    
+
   this.getWaterNoise = function(x,y,z){
     return tooloud.Simplex.noise(x, y, z);
-  }  
-  
-  this.simpleWaterMat = new THREE.MeshStandardMaterial({transparent:true,opacity:0.7,color:0xd0e0e0, metalness:0, roughness:0, envMap:enviro} );
-  
+  }
+
+  this.simpleWaterMat = new THREE.MeshStandardMaterial({transparent:true,opacity:0.4,color:0xd0e0e0, metalness:0, roughness:0, envMap:enviro} );
+
   this.simpleWaterGeometry = new THREE.PlaneGeometry(waterInfoWidth,waterInfoWidth,50,50);
-  
+
   this.simpleWater = new THREE.Mesh(this.simpleWaterGeometry,this.simpleWaterMat);
   this.simpleWater.rotateX(-Math.PI/2);
   this.scene.add(this.simpleWater);
+
+	renderPass = new THREE.RenderPass( this.scene, this.camera );
+  var effectCopy = new THREE.ShaderPass( THREE.CopyShader );
+
+  // pasted
+  this.composer = new THREE.EffectComposer(this.renderer);
+  // strength, kernelSize, sigma
+  this.effectBloom = new THREE.BloomPass(0.7,25,5);
+  this.composer.addPass(renderPass)
+  this.composer.addPass(this.effectBloom);
+  this.composer.addPass(effectCopy)
+  effectCopy.renderToScreen = true;
 
 };
 
@@ -375,14 +404,14 @@ App.prototype.render = function(){
 
   requestAnimationFrame( this.render.bind(this) );
 
-  this.controls.update(); 
+  this.controls.update();
 
   if (useGui){
 
     this.guiUpdate();
 
-  } 
-  
+  }
+
   this.lightHelper.update();
 
   this.update();
@@ -406,27 +435,37 @@ App.prototype.update = function(){
   // move the duck around
   if (this.duck){
     var t = now*this.duck.spd*10;
-    this.duck.position.y = Math.sin(t/3000 + this.duck.phase)*this.duck.scale.y / 12;  
+    this.duck.position.y = Math.sin(t/3000 + this.duck.phase)*this.duck.scale.y / 12;
     this.duck.euler.x = Math.sin(t/1000 * this.duck.rot2)/10;
     //this.duck.euler.y = t/5000 * this.duck.rot + this.duck.phase;
     this.duck.euler.z = Math.sin(t/1000 * this.duck.rot3)/10;
     this.duck.setRotationFromEuler(this.duck.euler);
   }
-  
+
   // move the duckitu around
-  
-  var theta = now/5000;
-  var px = 700* -Math.sin(theta);
-  var pz = 700* -Math.cos(theta);
-  var py = 200 + 50* Math.sin(theta*2.32156);
-  this.pointLight.position.set(px,py,pz);  
+
+  var theta = now/2000;
+  var px = 200* -Math.sin(theta);
+  var pz = 200* -Math.cos(theta);
+  var py = 500 + 50* Math.sin(theta*2.32156);
+  this.pointLight.position.set(px,py,pz);
+
+
+  this.spotLight.angle=0.9;
+  this.spotLight.position.set(px/2.5,py/2.5,pz/2.5);
+  this.spotLight.lookAt(ZERO);
+  this.spotLight.shadow.update(this.spotLight);
+
+  this.spotLight.shadow.camera.updateProjectionMatrix();
+
   if (this.duckitu){
     this.duckitu.position.copy(this.pointLight.position);
     this.duckitu.position.y += 13;
-    this.duckitu.setRotationFromAxisAngle ( UP, theta - Math.PI/2);    
-    if (!this.duckitu.hasCloud && this.cloud){// add cloud and bulb  
-      this.duckitu.hasCloud = true;    
+    this.duckitu.setRotationFromAxisAngle ( UP, theta - Math.PI/2);
+    if (!this.duckitu.hasCloud && this.cloud){// add cloud and bulb
+      this.duckitu.hasCloud = true;
       this.duckitu.cloud = this.cloud.clone();
+      this.duckitu.cloud.castShadow = this.duckitu.cloud.receiveShadow = false;
       this.duckitu.cloud.scale.set(5,5,5);
       this.scene.add(this.duckitu.cloud);
       this.duckitu.bulb = new THREE.Mesh(new THREE.SphereGeometry(10,8,6),new THREE.MeshStandardMaterial({color:0,emissive:this.pointLight.color}));
@@ -435,26 +474,27 @@ App.prototype.update = function(){
     if (this.duckitu.hasCloud){
       this.duckitu.cloud.position.copy(this.pointLight.position);
       this.duckitu.bulb.position.copy(this.pointLight.position);
-    
-      this.duckitu.cloud.rotation.copy(this.duckitu.rotation)
-      this.duckitu.bulb.position.y += 3;
-    }        
-  }
-  
-  // real scene
 
-  this.renderer.render(this.scene, this.camera);
-  
-  //move water  
-  
-  this.simpleWaterGeometry.vertices.forEach((p)=>{    
+      this.duckitu.cloud.rotation.copy(this.duckitu.rotation);
+      this.duckitu.bulb.position.y += 3;
+    }
+  }
+
+  // real scene
+  //this.renderer.render(this.scene, this.camera);
+
+  this.composer.render();
+
+  //move water
+
+  this.simpleWaterGeometry.vertices.forEach((p)=>{
     p.z = 7*(-0.1+this.getWaterNoise(now/1000,p.y/20,p.x/20));
   });
-  
+
   //update cloud lighting
   if (this.cloud){
-    this.cloud.material.emissive = this.directionalLight.color;
-    this.cloud.material.emissiveIntensity = this.directionalLight.intensity * 0.5;    
+    this.cloud.material.emissive = this.spotLight.color;
+    this.cloud.material.emissiveIntensity = this.spotLight.intensity * 0.5;
   }
 
   this.simpleWaterGeometry.verticesNeedUpdate = true;
@@ -471,8 +511,8 @@ App.prototype.initGui = function(){
 
       'poolHeight': 60
 
-    };  
-    
+    };
+
   }
 
 
@@ -494,7 +534,7 @@ App.prototype.toggleRaycastHelper = function(){
 
 
 App.prototype.onMouseClick = function(event) {
-  
+
   return;
 
   /*
