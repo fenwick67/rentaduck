@@ -104,9 +104,12 @@ var App = function(){
 
   var enviro = new THREE.CubeTextureLoader().load(env_urls);
 
+
   // real scene
 
   this.scene = new THREE.Scene();
+  this.scene.background=enviro;
+
   this.scene.matrixAutoUpdate = false;
 
   // ducke
@@ -120,14 +123,12 @@ var App = function(){
     'res/ducke.json',
     // Function when resource is loaded
     function ( geometry, material ) {
-      var mat = new THREE.MeshStandardMaterial({metalness:0,roughness:0.4,envMap:enviro});
+      var mat = new THREE.MeshStandardMaterial({metalness:0.01,roughness:0.2,envMap:enviro});
       mat.map = material[0].map;
-      mat.shininess = 10;
-      mat.specular = new THREE.Color(0x202020);
 
       self.duck = new THREE.Mesh( geometry, mat );
       self.duck.castShadow = true;
-//      self.duck.receiveShadow = true;
+//    self.duck.receiveShadow = true;
       self.duck.scale.set(15,15,15);
 
       self.duck.phase = Math.random()*100;
@@ -169,7 +170,7 @@ var App = function(){
 
             var mat = new THREE.MeshStandardMaterial({
               metalness:0,
-              roughness:0.5,
+              roughness:0.3,
               envMap:enviro,
               map:tileTexture,
               bumpMap:bumpTexture,
@@ -220,21 +221,6 @@ var App = function(){
 
   // this.scene.fog = new THREE.FogExp2(0xfef8d3,0.001);
 
-  // skybox
-
-  var materialArray = env_urls.map(function(u){
-    return new THREE.MeshBasicMaterial( { map: new THREE.TextureLoader().load( u ), fog:false })
-  });
-
-  for (var i = 0; i < 6; i++)
-     materialArray[i].side = THREE.BackSide;
-  var skyboxMaterial = new THREE.MeshFaceMaterial( materialArray );
-  var skyboxGeom = new THREE.CubeGeometry( 5000, 5000, 5000, 1, 1, 1 );
-  var skybox = new THREE.Mesh( skyboxGeom, skyboxMaterial );
-  this.scene.add( skybox );
-  this.skybox = skybox;
-
-
   //cloud
 
   var loader3 = new THREE.JSONLoader();
@@ -274,7 +260,7 @@ var App = function(){
   this.pointLight.position.set(0,100,0);
   this.scene.add(this.pointLight);
 
-  this.spotLight.intensity = 0.2;
+  this.spotLight.intensity = 0.3;
   this.pointLight.intensity = 0.1;
 
   // camera
@@ -364,13 +350,24 @@ var App = function(){
 
 	renderPass = new THREE.RenderPass( this.scene, this.camera );
   var effectCopy = new THREE.ShaderPass( THREE.CopyShader );
+  this.effectColor = new THREE.ShaderPass(THREE.ColorCorrectionShader);
+  this.effectColor.uniforms.powRGB.value.set(0.6,0.7,1);// brightness => yellow
+  this.effectColor.uniforms.mulRGB.value.set(1.05,1,1.2);// darkness => purple
+  this.effectColor.uniforms.addRGB.value.set(0,0,0);
 
   // pasted
   this.composer = new THREE.EffectComposer(this.renderer);
-  // strength, kernelSize, sigma
-  this.effectBloom = new THREE.BloomPass(0.7,25,5);
-  this.composer.addPass(renderPass)
+  this.effectBloom = new THREE.UnrealBloomPass(
+    new THREE.Vector2( 256,256 ),
+    0.3, 0.4, 0.9 // strength, radius, threshold
+  );
+  this.composer.addPass(renderPass);
+  this.aaPass = new THREE.ShaderPass( THREE.FXAAShader );
+  this.composer.addPass(this.aaPass);
+  // this.aaPass.renderToScreen = true;
   this.composer.addPass(this.effectBloom);
+  this.composer.addPass(this.effectColor);
+
   this.composer.addPass(effectCopy)
   effectCopy.renderToScreen = true;
 
