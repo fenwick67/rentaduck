@@ -2,9 +2,53 @@
  * sydneyzh 2016
  */
 
-var UP = new THREE.Vector3(0,1,0);
-var ZERO = new THREE.Vector3(0,0,0);
-var waterInfoWidth = waterWidth = 125;
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import {
+  Vector3,
+  Vector2,
+  WebGLRenderer, 
+  CubeTextureLoader,
+  MeshStandardMaterial,
+  Mesh,
+  Material,
+  MaterialLoader,
+  Raycaster,
+  SphereGeometry,
+  Scene,
+  MeshNormalMaterial,
+  TextureLoader,
+  ObjectLoader,
+  RepeatWrapping,
+  Euler,
+  DoubleSide,
+  PlaneGeometry,
+  HemisphereLight,
+  SpotLight,
+  PointLight,
+  PerspectiveCamera,
+  RGBFormat,
+  CylinderGeometry,
+  Object3D,
+  SpotLightHelper,
+  PCFShadowMap,
+  PCFSoftShadowMap,
+  FogExp2,
+} from 'three';
+
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js'
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import ColorCorrectionShader from '../libs/ColorCorrectionShader.js';
+import { CopyShader } from "three/examples/jsm/shaders/CopyShader.js";
+import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
+
+var UP = new Vector3(0,1,0);
+var ZERO = new Vector3(0,0,0);
+var waterInfoWidth = 125;
+var waterWidth = waterInfoWidth;
 var waterInfoHeight = waterInfoWidth;
 
 var causticsInfoWidth = 4 * waterInfoWidth;
@@ -18,14 +62,6 @@ var useGui = true;
 
 var showLightHelper = false;
 
-var lightDirPresets = [
-  [1.81, -0.41],
-  [0.85, 0.15],
-  [1.34, -0.14]
-];
-
-var logDir = false; // log light direction vector
-
 var showStats = false;
 
 var showRaycastHelper = false;
@@ -33,10 +69,10 @@ var showRaycastHelper = false;
 
 window.onload = function(){
 
-  if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+  // if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
-  app = new App();
-  app.startAnim();
+  window.app = new App();
+  window.app.startAnim();
 
   window.addEventListener( 'resize', onWindowResize, false );
   onWindowResize();
@@ -44,10 +80,10 @@ window.onload = function(){
 };
 
 function onWindowResize() {
-  app.camera.aspect = window.innerWidth / window.innerHeight;
-  app.camera.updateProjectionMatrix();
-  app.renderer.setSize( window.innerWidth, window.innerHeight );
-  app.composer.setSize( window.innerWidth, window.innerHeight );
+  window.app.camera.aspect = window.innerWidth / window.innerHeight;
+  window.app.camera.updateProjectionMatrix();
+  window.app.renderer.setSize( window.innerWidth, window.innerHeight );
+  window.app.composer.setSize( window.innerWidth, window.innerHeight );
 }
 
 var App = function(){
@@ -64,27 +100,16 @@ var App = function(){
 
   // renderer
 
-  this.renderer = new THREE.WebGLRenderer({antialias:true});
+  this.renderer = new WebGLRenderer({antialias:true});
 
   this.renderer.setClearColor( 0x000000, 1);
   this.renderer.antialias = true;
   this.renderer.autoClear = false;
   this.renderer.shadowMap.enabled = true;
+  this.renderer.shadowMap.type = PCFSoftShadowMap;
   this.container.appendChild(this.renderer.domElement);
 
-
-  // lightHelper
-
-  this.lightHelper = new LightHelper({
-
-    gui: useGui && this.gui,
-    logDir: logDir,
-    presets: lightDirPresets
-
-  });
-
-
-  if (this.lightHelper.obj){
+  if (this.lightHelper?.obj){
 
     this.lightHelper.obj.position.y = 50;
 
@@ -102,12 +127,12 @@ var App = function(){
    'img/skybox/negz.jpg'
   ];
 
-  var enviro = new THREE.CubeTextureLoader().load(env_urls);
+  var enviro = new CubeTextureLoader().load(env_urls);
 
 
   // real scene
 
-  this.scene = new THREE.Scene();
+  this.scene = new Scene();
   this.scene.background=enviro;
 
   this.scene.matrixAutoUpdate = false;
@@ -117,66 +142,67 @@ var App = function(){
   this.duck = null;
   this.duckitu = null;
 
-  var loader = new THREE.JSONLoader();// load a resource
+  var loader = new GLTFLoader();// load a resource
   loader.load(
     // resource URL
-    'res/ducke.json',
+    'res/ducke.glb',
     // Function when resource is loaded
-    function ( geometry, material ) {
-      var mat = new THREE.MeshStandardMaterial({metalness:0.01,roughness:0.2,envMap:enviro});
+    function ( glb ) {
+      // var mat = new MeshStandardMaterial({metalness:0.01,roughness:0.2,envMap:enviro});
       // mat.map = material[0].map;
 
-      self.duck = new THREE.Mesh( geometry, mat );
+      self.duck = new Object3D();
+      glb.scene.children.forEach(child=>{
+        if (child.isMesh && child.material){
+          child.material.envMap=enviro;
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      })
+      self.duck.add(glb.scene)
       self.duck.castShadow = true;
-//    self.duck.receiveShadow = true;
+      self.duck.receiveShadow = true;
       self.duck.scale.set(15,15,15);
 
       self.duck.phase = Math.random()*100;
       self.duck.rot = 1/3.3215678;
       self.duck.rot2 = 1/2.31567;
       self.duck.rot3 = 1/3.35123;
-      self.duck.euler = new THREE.Euler(0,0,0);
+      self.duck.euler = new Euler(0,0,0);
       self.duck.spd = 0.5;
 
-      var loader = new THREE.TextureLoader();
-      loader.load(
-        'res/DUCKIMG.png',
-        function ( texture ) {
-          mat.map = texture;
-          self.scene.add(self.duck);
-          self.duckitu = self.duck.clone();
-          self.duckitu.castShadow = self.duckitu.receiveShadow = false;
+      self.scene.add(self.duck);
+      self.duckitu = self.duck.clone();
+      self.duckitu.castShadow = self.duckitu.receiveShadow = false;
 
-          self.duckitu.scale.set(10,10,10);
-          self.scene.add(self.duckitu);
-        }
-
-      );
+      self.duckitu.scale.set(10,10,10);
+      self.scene.add(self.duckitu);
 
     }
   );
 
   // the sinke
-  var loader2 = new THREE.JSONLoader();
-  loader2.load('res/sink.json',function(geo,materials){
-    var l = new THREE.TextureLoader();
+  var loader2 = new GLTFLoader();
+  loader2.load('res/sink.glb',function(glb){
+    var geo = glb.scene.children[0].geometry;
+    var l = new TextureLoader();
       l.load(
         'img/tile.jpg',
         function ( tileTexture ) {
-          var l2 = new THREE.TextureLoader();
+          var l2 = new TextureLoader();
           l2.load('img/tilebump.jpg',function(bumpTexture){
-            tileTexture.wrapS = tileTexture.wrapT = THREE.RepeatWrapping;
-            bumpTexture.wrapS = bumpTexture.wrapT = THREE.RepeatWrapping;
+            tileTexture.wrapS = tileTexture.wrapT = RepeatWrapping;
+            bumpTexture.wrapS = bumpTexture.wrapT = RepeatWrapping;
 
-            var mat = new THREE.MeshStandardMaterial({
+            var mat = new MeshStandardMaterial({
               metalness:0,
-              roughness:0.3,
+              roughness:0.1,
               envMap:enviro,
               map:tileTexture,
               bumpMap:bumpTexture,
-              bumpScale:0.3
+              bumpScale:0.5
             });
-            var mesh = new THREE.Mesh(geo,mat);
+            var mesh = new Mesh(geo,mat);
             mesh.scale.set(waterInfoWidth,waterInfoWidth,waterInfoWidth);
             mesh.position.y = -23.4
       	    mesh.castShadow = true;
@@ -199,10 +225,10 @@ var App = function(){
   // tileTexture
 
   /*
-  var sinkMat = new THREE.MeshStandardMaterial({roughness:0.2,metalness:0,envMap:enviro});
-  this.sinkMat = sinkMat;
-  this.sink = new SinkGeometry(waterInfoWidth,20,45, sinkMat );
-  this.sink.position.set(0,5,0);
+  // var sinkMat = new THREE.MeshStandardMaterial({roughness:0.2,metalness:0,envMap:enviro});
+  // this.sinkMat = sinkMat;
+  // this.sink = new SinkGeometry(waterInfoWidth,20,45, sinkMat );
+  // this.sink.position.set(0,5,0);
   var floor = new THREE.Mesh(new THREE.PlaneGeometry(waterInfoWidth,waterInfoWidth),sinkMat);
   floor.rotateX(-Math.PI/2);
   floor.position.y = -35;
@@ -219,53 +245,65 @@ var App = function(){
 
   // fog
 
-  // this.scene.fog = new THREE.FogExp2(0xfef8d3,0.001);
+  // this.scene.fog = new FogExp2(0xfef8d3,0.001);
 
   //cloud
+  var loader3 = new GLTFLoader();
+  loader3.load('res/cloud_smooth.glb',function(glb){
+    var geo = glb.scene.children[0].geometry
 
-  var loader3 = new THREE.JSONLoader();
-  loader3.load('res/cloud.json',function(geo){
-    self.cloud = new THREE.Mesh(geo,new THREE.MeshStandardMaterial({
+    self.cloud = new Mesh(geo,new MeshStandardMaterial({
       envMap:enviro,
       metalness:0.0,
       roughness:1,
       emissive:self.spotLight.color,
       emissiveIntensity:0.5,
-      side:THREE.DoubleSide
+      side:DoubleSide,
+      flatShading:false
     }));
     self.cloud.scale.set(50,50,50);
     self.cloud.receiveShadow = true;
     self.cloud.castShadow = false;
-    self.cloud.position.set(0,-160,0);
+    self.cloud.position.set(0,-112,0);// formerly -160
     self.scene.add(self.cloud);
   });
 
 
   //lights
-  this.hemisphereLight = new THREE.HemisphereLight(0xeac49f,0xbd97c0,0.6);
+  this.hemisphereLight = new HemisphereLight(0xeac49f,0xbd97c0,0.3);
   this.scene.add(this.hemisphereLight);
-  this.spotLight = new THREE.SpotLight(0xfbf3c1,0.5);
+
+  this.spotLight = new SpotLight(0xfbf3c1,55.5);
   this.spotLight.castShadow = true;
   this.spotLight.position.set(0,50,0);
   this.spotLight.lookAt(ZERO);
   this.spotLight.shadow.camera.far = 2000;
+  this.spotLight.shadow.camera.near = 10;
   this.spotLight.shadow.mapSize.width = 1024;
   this.spotLight.shadow.mapSize.height = 1024;
+  // this.spotLight.shadow.camera.fov = 5;
+  this.spotLight.decay=0;
+  this.spotLight.shadow.focus=1;
   this.scene.add(this.spotLight);
 
-  //this.spotLight.shadow.camera.fov = 5;
   this.spotLight.shadow.camera.updateProjectionMatrix();
 
-  this.pointLight = new THREE.PointLight(0xc6f9ff);
+  this.spotLightHelper = new SpotLightHelper( this.spotLight );
+  this.scene.add( this.spotLightHelper );
+  // it's just for debugging so turn it off 
+  this.spotLightHelper.visible=false
+
+  this.pointLight = new PointLight(0xc6f9ff);
   this.pointLight.position.set(0,100,0);
+  this.pointLight.decay=0;
   this.scene.add(this.pointLight);
 
-  this.spotLight.intensity = 0.3;
-  this.pointLight.intensity = 0.1;
+  this.spotLight.intensity = 0.5;
+  this.pointLight.intensity = 0.2;
 
   // camera
 
-  this.camera = new THREE.PerspectiveCamera( 45, 800 / 450, 1, 100000 );
+  this.camera = new PerspectiveCamera( 45, 800 / 450, 1, 100000 );
 
   this.camera.position.z = 100;
   this.camera.position.y = 50;
@@ -273,7 +311,7 @@ var App = function(){
 
   // controls
 
-  this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+  this.controls = new OrbitControls(this.camera, this.renderer.domElement);
   this.controls.rotateSpeed = 0.25;
   this.controls.enableDamping = true;
   this.controls.dampingFactor = 0.25;
@@ -295,8 +333,8 @@ var App = function(){
 
   ];
 
-  var skyTexture = new THREE.CubeTextureLoader().load( urls );
-  skyTexture.format = THREE.RGBFormat;
+  var skyTexture = new CubeTextureLoader().load( urls );
+  skyTexture.format = RGBFormat;
 
 
 
@@ -313,20 +351,20 @@ var App = function(){
 
   // raycaster
 
-  this.raycaster = new THREE.Raycaster();
+  this.raycaster = new Raycaster();
 
-  this.mouse = new THREE.Vector2();
+  this.mouse = new Vector2();
 
   this.container.addEventListener('click', this.onMouseClick.bind(this), false);
 
 
   // raycast helper
 
-  var geometry = new THREE.CylinderGeometry( 0, 4, 6, 3 );
+  var geometry = new CylinderGeometry( 0, 4, 6, 3 );
 
   this.raycasterOffsetY = 4;
 
-  this.raycastHelper = new THREE.Mesh( geometry, new THREE.MeshNormalMaterial());
+  this.raycastHelper = new Mesh( geometry, new MeshNormalMaterial());
 
   this.raycastHelper.position.y += this.raycasterOffsetY;
 
@@ -337,32 +375,32 @@ var App = function(){
   // "simple" water
 
   this.getWaterNoise = function(x,y,z){
-    return tooloud.Simplex.noise(x, y, z);
+    return tooloud.Simplex.noise(x, y, z)
   }
 
-  this.simpleWaterMat = new THREE.MeshStandardMaterial({transparent:true,opacity:0.4,color:0xd0e0e0, metalness:0, roughness:0, envMap:enviro} );
+  this.simpleWaterMat = new MeshStandardMaterial({transparent:true,opacity:0.5,color:0xd0e0f0, metalness:0, roughness:0, envMap:enviro} );
 
-  this.simpleWaterGeometry = new THREE.PlaneGeometry(waterInfoWidth,waterInfoWidth,50,50);
+  this.simpleWaterGeometry = new PlaneGeometry(waterInfoWidth,waterInfoWidth,50,50);
 
-  this.simpleWater = new THREE.Mesh(this.simpleWaterGeometry,this.simpleWaterMat);
+  this.simpleWater = new Mesh(this.simpleWaterGeometry,this.simpleWaterMat);
   this.simpleWater.rotateX(-Math.PI/2);
   this.scene.add(this.simpleWater);
 
-	renderPass = new THREE.RenderPass( this.scene, this.camera );
-  var effectCopy = new THREE.ShaderPass( THREE.CopyShader );
-  this.effectColor = new THREE.ShaderPass(THREE.ColorCorrectionShader);
+	var renderPass = new RenderPass( this.scene, this.camera );
+  var effectCopy = new ShaderPass( CopyShader );
+  this.effectColor = new ShaderPass(ColorCorrectionShader);
   this.effectColor.uniforms.powRGB.value.set(0.6,0.7,1);// brightness => yellow
-  this.effectColor.uniforms.mulRGB.value.set(1.05,1,1.2);// darkness => purple
+  this.effectColor.uniforms.mulRGB.value.set(1.05,1,1.4);// darkness => purple
   this.effectColor.uniforms.addRGB.value.set(0,0,0);
 
-  // pasted
-  this.composer = new THREE.EffectComposer(this.renderer);
-  this.effectBloom = new THREE.UnrealBloomPass(
-    new THREE.Vector2( 256,256 ),
+  // // pasted
+  this.composer = new EffectComposer(this.renderer);
+  this.effectBloom = new UnrealBloomPass(
+    new Vector2( 256,256 ),
     0.3, 0.4, 0.9 // strength, radius, threshold
   );
   this.composer.addPass(renderPass);
-  this.aaPass = new THREE.ShaderPass( THREE.FXAAShader );
+  this.aaPass = new ShaderPass( FXAAShader );
   this.composer.addPass(this.aaPass);
   // this.aaPass.renderToScreen = true;
   this.composer.addPass(this.effectBloom);
@@ -409,7 +447,7 @@ App.prototype.render = function(){
 
   }
 
-  this.lightHelper.update();
+  this.lightHelper?.update();
 
   this.update();
 
@@ -447,12 +485,11 @@ App.prototype.update = function(){
   var py = 500 + 50* Math.sin(theta*2.32156);
   this.pointLight.position.set(px,py,pz);
 
-
   this.spotLight.angle=0.9;
   this.spotLight.position.set(px/2.5,py/2.5,pz/2.5);
   this.spotLight.lookAt(ZERO);
-  this.spotLight.shadow.update(this.spotLight);
-
+  this.spotLight.shadow.needsUpdate=true;
+  this.spotLightHelper.update();
   this.spotLight.shadow.camera.updateProjectionMatrix();
 
   if (this.duckitu){
@@ -465,7 +502,7 @@ App.prototype.update = function(){
       this.duckitu.cloud.castShadow = this.duckitu.cloud.receiveShadow = false;
       this.duckitu.cloud.scale.set(5,5,5);
       this.scene.add(this.duckitu.cloud);
-      this.duckitu.bulb = new THREE.Mesh(new THREE.SphereGeometry(10,8,6),new THREE.MeshStandardMaterial({color:0,emissive:this.pointLight.color}));
+      this.duckitu.bulb = new Mesh(new SphereGeometry(10,8,6),new MeshStandardMaterial({color:0,emissive:this.pointLight.color}));
       this.scene.add(this.duckitu.bulb);
     }
     if (this.duckitu.hasCloud){
@@ -473,20 +510,22 @@ App.prototype.update = function(){
       this.duckitu.bulb.position.copy(this.pointLight.position);
 
       this.duckitu.cloud.rotation.copy(this.duckitu.rotation);
-      this.duckitu.bulb.position.y += 3;
+      this.duckitu.bulb.position.y += 6;
+      this.duckitu.cloud.position.y += 6;
     }
   }
 
   // real scene
-  //this.renderer.render(this.scene, this.camera);
+  // this.renderer.render(this.scene, this.camera);
 
-  this.composer.render();
 
   //move water
-
-  this.simpleWaterGeometry.vertices.forEach((p)=>{
-    p.z = 7*(-0.1+this.getWaterNoise(now/1000,p.y/20,p.x/20));
-  });
+  const waterPos=this.simpleWaterGeometry.attributes.position
+  for (var i = 0; i < waterPos.count; i++){
+    var x = waterPos.getX(i)
+    var y = waterPos.getY(i)
+    waterPos.setZ(i, 9*(-0.1+this.getWaterNoise(y/20,x/20, now/1000)));
+  }
 
   //update cloud lighting
   if (this.cloud){
@@ -494,9 +533,10 @@ App.prototype.update = function(){
     this.cloud.material.emissiveIntensity = this.spotLight.intensity * 0.5;
   }
 
-  this.simpleWaterGeometry.verticesNeedUpdate = true;
+  this.simpleWaterGeometry.attributes.position.needsUpdate = true;
   this.simpleWaterGeometry.computeVertexNormals();
 
+  this.composer.render();
 }
 
 App.prototype.initGui = function(){

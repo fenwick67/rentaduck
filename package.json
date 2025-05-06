@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "rollup": "^4.40.1",
+    "rollup-plugin-copy": "^3.5.0",
+    "rollup-plugin-livereload": "^2.0.5",
+    "rollup-plugin-terser": "^7.0.2",
+    "serve": "^14.2.4",
+    "three": "^0.176.0"
+  },
+  "scripts": {
+    "build": "rollup -w -c \"rollup_config.js\"",
+    "start": "npm run open & serve dist",
+    "open": "open http://localhost:3000/",
+    "clean": "rm -rf dist"
+   }
+}

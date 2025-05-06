@@ -1,3 +1,5 @@
+import * as THREE from 'three'
+
 SinkGeometry = function(size, wallThickness, sinkHeight, material){
   var ret = new THREE.Object3D();
   var material = material || new THREE.MeshStandardMaterial({roughness:0.2,metalness:0});
@@ -23,3 +25,5 @@ SinkGeometry = function(size, wallThickness, sinkHeight, material){
   
   return ret;
 }
+
+export default SinkGeometry
