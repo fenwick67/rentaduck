@@ -124,7 +124,7 @@ var App = function(){
     // Function when resource is loaded
     function ( geometry, material ) {
       var mat = new THREE.MeshStandardMaterial({metalness:0.01,roughness:0.2,envMap:enviro});
-      mat.map = material[0].map;
+      // mat.map = material[0].map;
 
       self.duck = new THREE.Mesh( geometry, mat );
       self.duck.castShadow = true;
