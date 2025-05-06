@@ -162,7 +162,7 @@ var App = function(){
       self.duck.add(glb.scene)
       self.duck.castShadow = true;
       self.duck.receiveShadow = true;
-      self.duck.scale.set(15,15,15);
+      self.duck.scale.set(18,18,18);
 
       self.duck.phase = Math.random()*100;
       self.duck.rot = 1/3.3215678;
@@ -187,7 +187,7 @@ var App = function(){
     var geo = glb.scene.children[0].geometry;
     var l = new TextureLoader();
       l.load(
-        'img/tile.jpg',
+        'res/tile2.jpg',
         function ( tileTexture ) {
           var l2 = new TextureLoader();
           l2.load('img/tilebump.jpg',function(bumpTexture){
