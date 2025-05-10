@@ -10,7 +10,7 @@
   },
   "scripts": {
     "build": "rollup -w -c \"rollup_config.js\"",
-    "start": "npm run open & serve dist",
+    "start": "npm run open & serve .",
     "open": "open http://localhost:3000/",
     "clean": "rm -rf dist"
    }

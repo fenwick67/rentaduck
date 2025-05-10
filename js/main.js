@@ -66,6 +66,21 @@ var showStats = false;
 
 var showRaycastHelper = false;
 
+function loadedAsset(){
+  window.assetsLoaded = window.assetsLoaded || 0;
+  window.assetsLoaded++;
+  document.getElementById('loadingprogress').style.width =Math.round(window.assetsLoaded/5 * 100) + "%";
+  if (window.assetsLoaded >= 5){
+    console.log(window.assetsLoaded)
+    window.setTimeout(function(){
+      var loaderEl = document.getElementById('loading');
+      if (loaderEl){
+        loaderEl.style.display='none'
+      }
+    },1)
+  }
+}
+
 
 window.onload = function(){
 
@@ -127,7 +142,7 @@ var App = function(){
    'img/skybox/negz.jpg'
   ];
 
-  var enviro = new CubeTextureLoader().load(env_urls);
+  var enviro = new CubeTextureLoader().load(env_urls, loadedAsset);
 
 
   // real scene
@@ -177,6 +192,7 @@ var App = function(){
 
       self.duckitu.scale.set(10,10,10);
       self.scene.add(self.duckitu);
+      loadedAsset();
 
     }
   );
@@ -209,7 +225,7 @@ var App = function(){
       	    mesh.receiveShadow = true;
             self.scene.add(mesh);
             self.mappedSink = mesh;
-
+            loadedAsset();
           });
         }
 
@@ -266,6 +282,7 @@ var App = function(){
     self.cloud.castShadow = false;
     self.cloud.position.set(0,-112,0);// formerly -160
     self.scene.add(self.cloud);
+    loadedAsset();
   });
 
 
@@ -333,7 +350,7 @@ var App = function(){
 
   ];
 
-  var skyTexture = new CubeTextureLoader().load( urls );
+  var skyTexture = new CubeTextureLoader().load( urls, loadedAsset );
   skyTexture.format = RGBFormat;
 
 

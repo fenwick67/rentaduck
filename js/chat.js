@@ -7,10 +7,10 @@ var chatHtml = `
     </ul>
     <div id="chatinput">
       <input type="text"></input>
-      <input type="button" class="btn" value="Send"></input>
+      <a class="btn" value="Send"><svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" viewBox="0 0 24 24"><path fill="currentColor" d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94a60.5 60.5 0 0 0 18.445-8.986a.75.75 0 0 0 0-1.218A60.5 60.5 0 0 0 3.478 2.404"/></svg></a>
     </div>
   </div>
-<a id="chat-toggle" href="#" title="Chat Now!"></a>
+<a id="chat-toggle" href="#" title="Chat Now!"><span class="chat-icon"></span></a>
 `
 
 var css = `* {
@@ -36,6 +36,7 @@ table,
 div,
 span,
 input,
+.btn,
 html,
 body {
   font-family: 'Open Sans', sans-serif;
@@ -53,7 +54,7 @@ body {
   transition: transform 0.3s ease;
   font-size: 100%;
 }
-.chatapp input {
+.chatapp input, .chatapp .btn {
   font-size: 100%;
   padding: 0.5rem 1rem;
   min-width: 0;
@@ -61,24 +62,46 @@ body {
 #chat-toggle {
   text-decoration: none;
   color: white;
-  background: #ffea01;
+  background: transparent;
   display: block;
   width: 50px;
   height: 50px;
-  font-size: 30px;
-  line-height: 50px;
+  font-size: 50px;
+  line-height: 0;
   text-align: center;
   position: fixed;
   right: 5px;
   bottom: calc(50% - 25px);
-  border-radius: 100%;
   text-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
-  border: solid 1px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
   font-weight: black;
+  color:#ffea01;
+  filter:drop-shadow(rgba(0,0,0,0.15) 0 3px 4px);
 }
-#chat-toggle::after {
-  content: '💬';
+.chat-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23000' fill-rule='evenodd' d='M16 32C7.163 32 0 24.837 0 16S7.163 0 16 0s16 7.163 16 16s-7.163 16-16 16m.28-8.675c1.028.711 2.332 1.134 3.744 1.134q.527 0 1.039-.077c.117.048.23.107.369.187q.45.264 1.2.81c.409.299.988.01.988-.493v-1.461q.315-.204.595-.442C25.345 22.025 26 20.715 26 19.31c0-.925-.28-1.79-.772-2.537a8 8 0 0 1-.627 1.53q.157.485.159 1.007c0 1.034-.488 2.01-1.352 2.742a4.7 4.7 0 0 1-.717.499a.61.61 0 0 0-.311.531v.624c-.593-.38-1-.559-1.31-.559a1 1 0 0 0-.104.009a5.7 5.7 0 0 1-2.602-.17a11.5 11.5 0 0 1-2.083.34zm-7.466-2.922a9 9 0 0 0 1.044.765v2.492c0 .63.725.99 1.236.616c1.41-1.03 2.39-1.612 2.635-1.67q.85.135 1.728.135c5.2 0 9.458-3.607 9.458-8.12c0-4.514-4.259-8.121-9.458-8.121S6 10.107 6 14.62c0 2.21 1.03 4.271 2.814 5.783m4.949.666c-.503 0-1.238.355-2.354 1.104v-1.437a.77.77 0 0 0-.39-.664a8 8 0 0 1-1.196-.833C8.37 18.01 7.55 16.366 7.55 14.62c0-3.61 3.516-6.588 7.907-6.588c4.392 0 7.907 2.978 7.907 6.588s-3.515 6.589-7.907 6.589q-.796 0-1.564-.13a1 1 0 0 0-.13-.01m-2.337-4.916c.685 0 1.24-.55 1.24-1.226c0-.677-.555-1.226-1.24-1.226s-1.24.549-1.24 1.226s.555 1.226 1.24 1.226m4.031 0c.685 0 1.24-.55 1.24-1.226c0-.677-.555-1.226-1.24-1.226s-1.24.549-1.24 1.226s.555 1.226 1.24 1.226m4.031 0c.685 0 1.24-.55 1.24-1.226c0-.677-.555-1.226-1.24-1.226s-1.24.549-1.24 1.226s.555 1.226 1.24 1.226'/%3E%3C/svg%3E");
+  background-color: currentColor;
+  -webkit-mask-image: var(--svg);
+  mask-image: var(--svg);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+#chat-toggle::after{
+  content:"";
+  position:absolute;
+  top:.05em;
+  left:.05em;
+  z-index:-1;
+  display:block;
+  border-radius:100%;
+  background:black;
+  width:0.9em;
+  height:0.9em;
 }
 .chatapp:not(.collapsed) ~ #chat-toggle {
   transform: translateX(-350px);
@@ -98,7 +121,7 @@ body {
     width: 250px;
   }
 }
-input {
+input, .btn {
   border: solid 1px rgba(0, 0, 0, 0.2);
 }
 #chatinput {
@@ -114,7 +137,8 @@ input {
   flex: 1 1 auto;
   border-right: none;
 }
-#chatinput input[type="button"] {
+#chatinput .btn{
+  line-height:0;
   flex: 0 0 auto;
 }
 .chatlist {
@@ -131,13 +155,19 @@ input {
   position: relative;
   padding: 1rem;
   border: solid 1px rgba(0, 0, 0, 0.2);
-  margin-left: 5rem;
   background: #ffea01;
+  border-radius: .7rem;
 }
 .chatlist li.me {
-  margin-left: 1rem;
+  margin-left: 4rem;
+  margin-right: 1rem;
   background: white;
 }
+.chatlist li:not(.me){
+  margin-left: 1rem;
+  margin-right: 4rem;
+}
+
 .chatlist li:last-child {
   animation: slidein 0.3s ease;
 }
@@ -152,35 +182,7 @@ input {
   top: 0;
   transform: rotateZ(90deg);
   z-index: 0;
-}
-.chatlist li .duckicon::after {
-  position: absolute;
-  content: "";
-  border: solid 2px black;
-  background: white;
-  border-bottom: solid 4px black;
-  border-right: solid 4px black;
-  width: 4px;
-  height: 4px;
-  border-radius: 100px;
-  top: 13px;
-  left: 13px;
-}
-.chatlist li .duckicon::before {
-  z-index: -10;
-  position: absolute;
-  content: "";
-  background: #ffae01;
-  width: 0;
-  height: 0;
-  right: 9px;
-  top: -11px;
-  border: 10px solid #ffae01;
-  border-bottom-left-radius: 10px;
-  border-top-right-radius: 15px;
-  border-bottom-right-radius: 10px;
-  border-top-left-radius: 6px;
-  transform: scaleX(0.7) rotateZ(45deg);
+  opacity: 0;
 }
 @keyframes slidein {
   from {
@@ -192,6 +194,7 @@ input {
 }
 .btn {
   background-color: #ffea01;
+  cursor: pointer;
 }
 #ellipsis {
   border: none;
@@ -227,7 +230,7 @@ var textInput = document.querySelector('#chatinput input[type="text"]');
 var chatList = document.querySelector('#chat-items');
 var ellipsis = document.querySelector('#ellipsis');
 
-document.querySelector('#chatinput input[type="button"]').addEventListener('click',send);
+document.querySelector('#chatinput .btn').addEventListener('click',send);
 document.querySelector('#chatinput input[type="text"]').addEventListener('keyup',function(e){
   if (e.keyCode == 13){
     send();
